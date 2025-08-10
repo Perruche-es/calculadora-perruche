@@ -36,7 +36,7 @@
     .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#f3f4f6;color:#111;border:1px solid var(--border)}
     .muted{color:var(--muted)}
     .kpi{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-top:10px}
-    .kpi .box{grid-column:span 4;min-width:180px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
+    .kpi .box{grid-column:span 3;min-width:180px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
     .kpi .val{font-size:20px;font-weight:800}
     .toolbar{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
     .cards{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-top:12px}
@@ -50,17 +50,9 @@
     .item .value{font-size:16px;font-weight:700}
     .save{font-weight:800;color:var(--success)}
     .empty{color:var(--muted);padding:8px}
-    @media(min-width:720px){
-      .prod{grid-column:span 6}
-    }
-    @media(min-width:980px){
-      .prod{grid-column:span 4}
-    }
-    @media print{
-      header,.toolbar{display:none}
-      body{background:#fff}
-      .card{border:none;box-shadow:none}
-    }
+    @media(min-width:720px){ .prod{grid-column:span 6} }
+    @media(min-width:980px){ .prod{grid-column:span 4} }
+    @media print{ header,.toolbar{display:none} body{background:#fff} .card{border:none;box-shadow:none} }
   </style>
 </head>
 <body>
@@ -124,6 +116,10 @@
           <div class="val" id="mixUser">—</div>
         </div>
         <div class="box">
+          <div class="muted" id="k4">Lavados por envase (tu producto)</div>
+          <div class="val" id="washesUser">—</div>
+        </div>
+        <div class="box">
           <div class="muted" id="k3">Productos con ahorro positivo</div>
           <div class="val" id="countPos">—</div>
         </div>
@@ -135,6 +131,7 @@
   </div>
 
 <script>
+// I18N
 const I18N = {
   es: {
     title:"Calculadora de rendimiento",
@@ -146,6 +143,7 @@ const I18N = {
     k1:"Coste por lavado (tu producto)",
     k2:"Mezcla final por lavado (ml)",
     k3:"Productos con ahorro positivo",
+    k4:"Lavados por envase (tu producto)",
     exportBtn:"Exportar a PDF",
     empty:"No hay productos con ahorro positivo para esos parámetros.",
     labels:{prod:"Producto",dil:"Dilución",vol:"Volumen envase",price:"Precio prof. (IVA)",cost:"Coste €/lavado",washes:"Lavados/garrafa",saving:"Ahorro €/garrafa",pure:"Producto puro necesario"}
@@ -160,18 +158,29 @@ const I18N = {
     k1:"Custo por lavagem (seu produto)",
     k2:"Mistura final por lavagem (ml)",
     k3:"Produtos com poupança positiva",
+    k4:"Lavagens por embalagem (seu produto)",
     exportBtn:"Exportar para PDF",
     empty:"Não há produtos com poupança positiva para esses parâmetros.",
     labels:{prod:"Produto",dil:"Diluição",vol:"Volume da embalagem",price:"Preço prof. (IVA)",cost:"Custo €/lavagem",washes:"Lavagens/embalagem",saving:"Poupança €/embalagem",pure:"Produto puro necessário"}
   }
 };
 
-// Normalizar tipo: prelavado => champu
+// Catálogo embebido
+let CATALOG = [{"nombre": "1:4 SHAMPOO NEUTRO GLICERINADO VINO TERAPIA 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 58.6686408}, {"nombre": "1:4 ACONDICIONADOR VINO TERAPIA 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 69.02905283999999}, {"nombre": "1:4 PRE LAVADO ANTIRESIDUOS Y LIMPIEZA PROFUNDIDAD 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 57.602306520000006}, {"nombre": "1:4 PRE LAVADO NEUTRO GLICERINADO 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 62.549665464}, {"nombre": "1:4 SHAMPOO NEUTRO BLANQUEADOR 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 59.869560959999994}, {"nombre": "1:4 SHAMPOO NEUTRO ALGAS MARINAS 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 59.69851536}, {"nombre": "1:4 ACONDICIONADOR ALGAS MARINAS 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 67.70930100000001}, {"nombre": "1:4 SHAMPOO NEUTRO FRESA 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 59.69851536}, {"nombre": "1:4 ACONDICIONADOR FRESA 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 67.70930100000001}, {"nombre": "1:4 SHAMPOO NEUTRO PITANGA NEGRA 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 59.69851536}, {"nombre": "1:4 SHAMPOO EXPERT FRESA 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 10.785955487999999}, {"nombre": "1:4 ACONDICIONADOR EXPERT ALGAS MARINAS 500ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 11.748131999999998}, {"nombre": "1:4 ACONDICIONADOR EXPERT FRESA 500ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 11.748131999999998}, {"nombre": "1:4 SHAMPOO EXPERT ALGAS MARINAS 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 10.785955487999999}, {"nombre": "1:4 SHAMPOO MAX ESSENCE MARACUJA E PAPAYA - 1L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 1000, "precio_prof_iva": 23.28740832}, {"nombre": "1:4 ACONDICIONADOR MAX ESSENCE MARACUJA E PAPAYA -1L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 1000, "precio_prof_iva": 27.844513223999996}, {"nombre": "1:4 SHAMPOO NEUTRO GLICERINADO ALTO IMPACTO KARITE 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 60.333544655999994}, {"nombre": "1:4 ACONDICIONADOR ALTO IMPACTO KARITE 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 69.12087732}, {"nombre": "1:4 CHAMPÚ HIPOALERGÉNICO JHONSHOW PET - 1 L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 1000, "precio_prof_iva": 37.096099656}, {"nombre": "1:4 ACONDICIONADOR HIPOALERGÉNICO JHONSHOW PET - 1 L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 1000, "precio_prof_iva": 42.458829336}, {"nombre": "1:4 SHAMPOO GLAMOUR 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 56.60358026400001}, {"nombre": "1:4 ACONDICIONADOR GLAMOUR 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 64.66603968}, {"nombre": "1:4 SHAMPOO DESENGRASANTE - CATLINE 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.04784488}, {"nombre": "1:4 SHAMPOO NEUTRO -  CATLINE 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 15.664176000000003}, {"nombre": "1:4 SHAMPOO  BLANQUEADOR -  CATLINE 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.04784488}, {"nombre": "1:4 SHAMPOO MAXIMO VOLUMEN - CATLINE 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.04784488}, {"nombre": "1:4 ACONDICIONADOR -  CATLINE 500 ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 18.09212328}, {"nombre": "1:4 PRE LAVADO ANTIRESÍDUO 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 SHAMPOO VINHO THERAPY 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 ACONDICIONADOR VINHO THERAPY 500 ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 SHAMPOO  PITANGA NEGRA 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 ACONDICIONADOR PITANGA NEGRA 500 ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 SHAMPOO GLAMOUR 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 ACONDICIONADOR GLAMOUR 500 ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:10 ACONDICIONADOR MAX DENATURE 5L", "tipo": "acondicionador", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 82.4259744}, {"nombre": "1:10 ACONDICIONADOR MAX FLOR DE MARACUYA 5L", "tipo": "acondicionador", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 82.4259744}, {"nombre": "1:10 PRE LAVADO MAX PRIME 5L ", "tipo": "champu", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 84.50012736000001}, {"nombre": "1:10 SHAMPOO NEUTRO MAX DENATURE 5L ", "tipo": "champu", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 76.160304}, {"nombre": "1:10 SHAMPOO NEUTRO MAX FLOR DE MARACUYA 5L ", "tipo": "champu", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 76.160304}, {"nombre": "1:2 Shampoo Prelavado 5 L Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 5000, "precio_prof_iva": 46.699769952}, {"nombre": "1:2 Shampoo Neutro 5L Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 5000, "precio_prof_iva": 41.706948888}, {"nombre": "1:2 Acondicionador 5L Santo Bicho", "tipo": "acondicionador", "dilucion": "1:2", "volumen_ml": 5000, "precio_prof_iva": 50.41344}, {"nombre": "1:2 Shampoo Neutro 500 ml Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 500, "precio_prof_iva": 8.51807088}, {"nombre": "1:2 Shampoo cachorros 500 ml Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 500, "precio_prof_iva": 8.51807088}, {"nombre": "1:2 Shampoo pelos claros 500 ml Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 500, "precio_prof_iva": 8.51807088}, {"nombre": "1:2 Acondicionador 500 ml Santo Bicho", "tipo": "acondicionador", "dilucion": "1:2", "volumen_ml": 500, "precio_prof_iva": 9.08252136}, {"nombre": "1:4 ACONDICIONADOR CEREZA Y AVELLANA 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 47.748729600000004}, {"nombre": "1:4 SHAMPOO NEUTRO CEREZA Y AVELLANA 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 46.17420984}, {"nombre": "1:6 SHAMPOO RESTAURADOR INFUSION 1L", "tipo": "champu", "dilucion": "1:6", "volumen_ml": 1000, "precio_prof_iva": 32.419892999999995}];
+
+// Normalizar tipo: "prelavado" => "champu"
 CATALOG = CATALOG.map(p => {
   if (/pre[\s-]?lavado/i.test(p.nombre)) p.tipo = "champu";
   return p;
 });
-const CATALOG = [{"nombre": "1:4 SHAMPOO NEUTRO GLICERINADO VINO TERAPIA 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 58.6686408}, {"nombre": "1:4 ACONDICIONADOR VINO TERAPIA 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 69.02905283999999}, {"nombre": "1:4 PRE LAVADO ANTIRESIDUOS Y LIMPIEZA PROFUNDIDAD 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 57.602306520000006}, {"nombre": "1:4 PRE LAVADO NEUTRO GLICERINADO 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 62.549665464}, {"nombre": "1:4 SHAMPOO NEUTRO BLANQUEADOR 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 59.869560959999994}, {"nombre": "1:4 SHAMPOO NEUTRO ALGAS MARINAS 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 59.69851536}, {"nombre": "1:4 ACONDICIONADOR ALGAS MARINAS 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 67.70930100000001}, {"nombre": "1:4 SHAMPOO NEUTRO FRESA 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 59.69851536}, {"nombre": "1:4 ACONDICIONADOR FRESA 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 67.70930100000001}, {"nombre": "1:4 SHAMPOO NEUTRO PITANGA NEGRA 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 59.69851536}, {"nombre": "1:4 SHAMPOO EXPERT FRESA 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 10.785955487999999}, {"nombre": "1:4 ACONDICIONADOR EXPERT ALGAS MARINAS 500ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 11.748131999999998}, {"nombre": "1:4 ACONDICIONADOR EXPERT FRESA 500ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 11.748131999999998}, {"nombre": "1:4 SHAMPOO EXPERT ALGAS MARINAS 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 10.785955487999999}, {"nombre": "1:4 SHAMPOO MAX ESSENCE MARACUJA E PAPAYA - 1L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 1000, "precio_prof_iva": 23.28740832}, {"nombre": "1:4 ACONDICIONADOR MAX ESSENCE MARACUJA E PAPAYA -1L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 1000, "precio_prof_iva": 27.844513223999996}, {"nombre": "1:4 SHAMPOO NEUTRO GLICERINADO ALTO IMPACTO KARITE 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 60.333544655999994}, {"nombre": "1:4 ACONDICIONADOR ALTO IMPACTO KARITE 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 69.12087732}, {"nombre": "1:4 CHAMPÚ HIPOALERGÉNICO JHONSHOW PET - 1 L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 1000, "precio_prof_iva": 37.096099656}, {"nombre": "1:4 ACONDICIONADOR HIPOALERGÉNICO JHONSHOW PET - 1 L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 1000, "precio_prof_iva": 42.458829336}, {"nombre": "1:4 SHAMPOO GLAMOUR 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 56.60358026400001}, {"nombre": "1:4 ACONDICIONADOR GLAMOUR 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 64.66603968}, {"nombre": "1:4 SHAMPOO DESENGRASANTE - CATLINE 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.04784488}, {"nombre": "1:4 SHAMPOO NEUTRO -  CATLINE 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 15.664176000000003}, {"nombre": "1:4 SHAMPOO  BLANQUEADOR -  CATLINE 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.04784488}, {"nombre": "1:4 SHAMPOO MAXIMO VOLUMEN - CATLINE 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.04784488}, {"nombre": "1:4 ACONDICIONADOR -  CATLINE 500 ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 18.09212328}, {"nombre": "1:4 PRE LAVADO ANTIRESÍDUO 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 SHAMPOO VINHO THERAPY 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 ACONDICIONADOR VINHO THERAPY 500 ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 SHAMPOO  PITANGA NEGRA 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 ACONDICIONADOR PITANGA NEGRA 500 ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 SHAMPOO GLAMOUR 500 ML", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:4 ACONDICIONADOR GLAMOUR 500 ML", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 500, "precio_prof_iva": 17.824751999999997}, {"nombre": "1:10 ACONDICIONADOR MAX DENATURE 5L", "tipo": "acondicionador", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 82.4259744}, {"nombre": "1:10 ACONDICIONADOR MAX FLOR DE MARACUYA 5L", "tipo": "acondicionador", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 82.4259744}, {"nombre": "1:10 PRE LAVADO MAX PRIME 5L ", "tipo": "champu", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 84.50012736000001}, {"nombre": "1:10 SHAMPOO NEUTRO MAX DENATURE 5L ", "tipo": "champu", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 76.160304}, {"nombre": "1:10 SHAMPOO NEUTRO MAX FLOR DE MARACUYA 5L ", "tipo": "champu", "dilucion": "1:10", "volumen_ml": 5000, "precio_prof_iva": 76.160304}, {"nombre": "1:2 Shampoo Prelavado 5 L Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 5000, "precio_prof_iva": 46.699769952}, {"nombre": "1:2 Shampoo Neutro 5L Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 5000, "precio_prof_iva": 41.706948888}, {"nombre": "1:2 Acondicionador 5L Santo Bicho", "tipo": "acondicionador", "dilucion": "1:2", "volumen_ml": 5000, "precio_prof_iva": 50.41344}, {"nombre": "1:2 Shampoo Neutro 500 ml Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 500, "precio_prof_iva": 8.51807088}, {"nombre": "1:2 Shampoo cachorros 500 ml Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 500, "precio_prof_iva": 8.51807088}, {"nombre": "1:2 Shampoo pelos claros 500 ml Santo Bicho", "tipo": "champu", "dilucion": "1:2", "volumen_ml": 500, "precio_prof_iva": 8.51807088}, {"nombre": "1:2 Acondicionador 500 ml Santo Bicho", "tipo": "acondicionador", "dilucion": "1:2", "volumen_ml": 500, "precio_prof_iva": 9.08252136}, {"nombre": "1:4 ACONDICIONADOR CEREZA Y AVELLANA 5L", "tipo": "acondicionador", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 47.748729600000004}, {"nombre": "1:4 SHAMPOO NEUTRO CEREZA Y AVELLANA 5L", "tipo": "champu", "dilucion": "1:4", "volumen_ml": 5000, "precio_prof_iva": 46.17420984}, {"nombre": "1:6 SHAMPOO RESTAURADOR INFUSION 1L", "tipo": "champu", "dilucion": "1:6", "volumen_ml": 1000, "precio_prof_iva": 32.419892999999995}];
+
+// Beneficios para fallback
+const BENEFITS = {
+  es: ["Alta concentración", "Aroma duradero", "Formulación profesional", "Envase gran formato"],
+  pt: ["Alta concentração", "Aroma duradouro", "Formulação profissional", "Embalagem de grande formato"]
+};
+
+// Estado
 const state = {lang:"es"};
 
 function setLang(l){
@@ -186,6 +195,7 @@ function setLang(l){
   document.getElementById("k1").textContent = t.k1;
   document.getElementById("k2").textContent = t.k2;
   document.getElementById("k3").textContent = t.k3;
+  document.getElementById("k4").textContent = t.k4;
   document.getElementById("exportBtn").textContent = t.exportBtn;
   document.getElementById("emptyMsg").textContent = t.empty;
 }
@@ -196,58 +206,54 @@ function parseDil(str){
   return m ? {p:+m[1], a:+m[2]} : null;
 }
 
-// Mezcla final del usuario (ml)
 function userMixVolume(pureMl, dilStr){
   const d = parseDil(dilStr);
   if(!d) return null;
   return +(pureMl * (d.p + d.a) / d.p).toFixed(0);
 }
 
-// Cantidad pura necesaria de Perruche para lograr esa misma mezcla final
 function pureNeededForMix(mixMl, dilStrCat){
   const d = parseDil(dilStrCat);
   if(!d) return null;
   return +(mixMl * d.p / (d.p + d.a)).toFixed(2);
 }
 
-
-// Beneficios genéricos para mostrar cuando no hay ahorro positivo
-const BENEFITS = {
-  es: ["Alta concentración", "Aroma duradero", "Formulación profesional", "Envase gran formato"],
-  pt: ["Alta concentração", "Aroma duradouro", "Formulação profissional", "Embalagem de grande formato"]
-};
-
-function renderCards(rows, lang){
+function renderCards(rows){
   const cards = document.getElementById('cards');
   const empty = document.getElementById('emptyMsg');
-  document.getElementById('countPos').textContent = rows.length;
-  if (rows.length){
-    renderCards(rows, state.lang);
-  } else {
-    // No hay ahorro positivo: buscamos candidatos cercanos (menor coste/lavado)
-    const all = CATALOG
-      .filter(r => r.tipo === type && r.volumen_ml && r.precio_prof_iva && r.dilucion)
-      .map(r => {
-        const pureCat = pureNeededForMix(mixUser, r.dilucion);
-        const costCat = +((r.precio_prof_iva / r.volumen_ml) * pureCat).toFixed(2);
-        const washes = +((r.volumen_ml / pureCat).toFixed(0));
-        return { nombre:r.nombre, dil:r.dilucion, vol:r.volumen_ml, price:r.precio_prof_iva, pureCat, costCat, washes };
-      })
-      .sort((a,b)=> a.costCat - b.costCat)
-      .slice(0, Math.min(6,  CATALOG.length));
-    renderBenefits(all, state.lang);
-  }
-});
+  cards.innerHTML = '';
+  empty.style.display = rows.length ? 'none' : 'block';
+  const L = I18N[state.lang].labels;
+
+  rows.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'prod';
+    el.innerHTML = `
+      <h3>${r.nombre}</h3>
+      <div class="meta">
+        <span class="tag">${L.dil}: ${r.dil}</span>
+        <span class="tag">${L.vol}: ${r.vol} ml</span>
+        <span class="tag">${L.price}: ${r.price.toFixed(2)} €</span>
+      </div>
+      <div class="cols">
+        <div class="item"><div class="label">${L.pure}</div><div class="value">${r.pureCat} ml</div></div>
+        <div class="item"><div class="label">${L.cost}</div><div class="value">${r.costCat.toFixed(2)} €</div></div>
+        <div class="item"><div class="label">Lavados</div><div class="value">Cliente ${state.washesUser} / Perruche ${r.washes}</div></div>
+        <div class="item"><div class="label">${L.saving}</div><div class="value save">+${r.saving.toFixed(2)} €</div></div>
+      </div>
+    `;
+    cards.appendChild(el);
+  });
 }
 
-function renderBenefits(rows, lang){
+function renderBenefits(rows){
   const cards = document.getElementById('cards');
   const empty = document.getElementById('emptyMsg');
-  const L = I18N[lang].labels;
-  const tips = BENEFITS[lang];
+  const L = I18N[state.lang].labels;
+  const tips = BENEFITS[state.lang];
 
   cards.innerHTML = '';
-  empty.style.display = false;
+  empty.style.display = 'none';
 
   rows.forEach(r => {
     const el = document.createElement('div');
@@ -279,9 +285,6 @@ function renderBenefits(rows, lang){
 }
 
 function calc(){
-  // Calcular lavados cliente
-  state.washesUser = Math.floor(state.volUser / state.pureUser);
-
   const price = +document.getElementById('price').value;
   const type = document.getElementById('type').value;
   const pack = +document.getElementById('pack').value;
@@ -293,14 +296,22 @@ function calc(){
   const pricePerMlUser = price / pack;
   const costUser = +(pricePerMlUser * pureMlUser).toFixed(2);
   const mixUser = userMixVolume(pureMlUser, dilUser);
+  const washesUser = Math.floor(pack / pureMlUser);
+
+  // Guardar KPIs
+  state.washesUser = washesUser;
+  state.volUser = pack;
+  state.pureUser = pureMlUser;
+
   document.getElementById('costUser').textContent = costUser.toFixed(2) + " €";
   document.getElementById('mixUser').textContent = mixUser ?? "—";
+  document.getElementById('washesUser').textContent = washesUser;
 
   // Catálogo
   const rows = CATALOG
     .filter(r => r.tipo === type && r.volumen_ml && r.precio_prof_iva && r.dilucion)
     .map(r => {
-      const pureCat = pureNeededForMix(mixUser, r.dilucion); // ml puros por lavado Perruche
+      const pureCat = pureNeededForMix(mixUser, r.dilucion);
       const costCat = +((r.precio_prof_iva / r.volumen_ml) * pureCat).toFixed(2);
       const washes = +((r.volumen_ml / pureCat).toFixed(0));
       const saving = +((costUser - costCat) * washes).toFixed(2);
@@ -309,31 +320,17 @@ function calc(){
         pureCat, costCat, washes, saving
       };
     })
-    .filter(x => x.saving > 0)
-    .sort((a,b)=> b.saving - a.saving);
+    .filter(x => isFinite(x.saving));
 
-  document.getElementById('countPos').textContent = rows.length;
+  const positives = rows.filter(x => x.saving > 0).sort((a,b)=> b.saving - a.saving);
+  document.getElementById('countPos').textContent = positives.length;
 
-  const cards = document.getElementById('cards');
-  const empty = document.getElementById('emptyMsg');
-  document.getElementById('countPos').textContent = rows.length;
-  if (rows.length){
-    renderCards(rows, state.lang);
+  if (positives.length){
+    renderCards(positives);
   } else {
-    // No hay ahorro positivo: buscamos candidatos cercanos (menor coste/lavado)
-    const all = CATALOG
-      .filter(r => r.tipo === type && r.volumen_ml && r.precio_prof_iva && r.dilucion)
-      .map(r => {
-        const pureCat = pureNeededForMix(mixUser, r.dilucion);
-        const costCat = +((r.precio_prof_iva / r.volumen_ml) * pureCat).toFixed(2);
-        const washes = +((r.volumen_ml / pureCat).toFixed(0));
-        return { nombre:r.nombre, dil:r.dilucion, vol:r.volumen_ml, price:r.precio_prof_iva, pureCat, costCat, washes };
-      })
-      .sort((a,b)=> a.costCat - b.costCat)
-      .slice(0, Math.min(6,  CATALOG.length));
-    renderBenefits(all, state.lang);
+    const nearest = rows.sort((a,b)=> a.costCat - b.costCat).slice(0, Math.min(6, rows.length));
+    renderBenefits(nearest);
   }
-});
 }
 
 document.getElementById('calcBtn').addEventListener('click', calc);
