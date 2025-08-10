@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>Calculadora de rendimiento Perruche</title>
   <style>
     :root{
@@ -49,6 +49,26 @@
       body{background:#fff}
       .card{border:none}
     }
+  
+  /* --- Responsive tweaks --- */
+  @media (max-width: 768px){
+    header{padding:12px}
+    h1{font-size:18px}
+    .wrap{margin:12px auto}
+    .grid{grid-template-columns:repeat(12,1fr);gap:10px}
+    .col-4, .col-8{grid-column:span 12}
+    label{font-size:14px}
+    input,select,button{padding:14px 14px;font-size:16px} /* tamaño cómodo para dedos */
+    .kpi .val{font-size:20px}
+    table{font-size:14px}
+    th,td{padding:8px}
+  }
+  @media (max-width: 420px){
+    header img{height:32px}
+    h1{font-size:16px}
+    .pill{display:none}
+    .toolbar{justify-content:center}
+  }
   </style>
 </head>
 <body>
