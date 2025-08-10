@@ -166,6 +166,11 @@ const I18N = {
   }
 };
 
+// Normalizar tipo: prelavado => champu
+CATALOG = CATALOG.map(p => {
+  if (/pre[\s-]?lavado/i.test(p.nombre)) p.tipo = "champu";
+  return p;
+});
 const CATALOG = [];
 const state = {lang:"es"};
 
@@ -205,7 +210,78 @@ function pureNeededForMix(mixMl, dilStrCat){
   return +(mixMl * d.p / (d.p + d.a)).toFixed(2);
 }
 
+
+// Beneficios genéricos para mostrar cuando no hay ahorro positivo
+const BENEFITS = {
+  es: ["Alta concentración", "Aroma duradero", "Formulación profesional", "Envase gran formato"],
+  pt: ["Alta concentração", "Aroma duradouro", "Formulação profissional", "Embalagem de grande formato"]
+};
+
+function renderCards(rows, lang){
+  const cards = document.getElementById('cards');
+  const empty = document.getElementById('emptyMsg');
+  document.getElementById('countPos').textContent = rows.length;
+  if (rows.length){
+    renderCards(rows, state.lang);
+  } else {
+    // No hay ahorro positivo: buscamos candidatos cercanos (menor coste/lavado)
+    const all = CATALOG
+      .filter(r => r.tipo === type && r.volumen_ml && r.precio_prof_iva && r.dilucion)
+      .map(r => {
+        const pureCat = pureNeededForMix(mixUser, r.dilucion);
+        const costCat = +((r.precio_prof_iva / r.volumen_ml) * pureCat).toFixed(2);
+        const washes = +((r.volumen_ml / pureCat).toFixed(0));
+        return { nombre:r.nombre, dil:r.dilucion, vol:r.volumen_ml, price:r.precio_prof_iva, pureCat, costCat, washes };
+      })
+      .sort((a,b)=> a.costCat - b.costCat)
+      .slice(0, Math.min(6,  CATALOG.length));
+    renderBenefits(all, state.lang);
+  }
+});
+}
+
+function renderBenefits(rows, lang){
+  const cards = document.getElementById('cards');
+  const empty = document.getElementById('emptyMsg');
+  const L = I18N[lang].labels;
+  const tips = BENEFITS[lang];
+
+  cards.innerHTML = '';
+  empty.style.display = false;
+
+  rows.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'prod';
+    el.innerHTML = `
+      <h3>${r.nombre}</h3>
+      <div class="meta">
+        <span class="tag">${L.dil}: ${r.dil}</span>
+        <span class="tag">${L.vol}: ${r.vol} ml</span>
+        <span class="tag">${L.price}: ${r.price.toFixed(2)} €</span>
+      </div>
+      <div class="cols">
+        <div class="item"><div class="label">${L.pure}</div><div class="value">${r.pureCat} ml</div></div>
+        <div class="item"><div class="label">${L.cost}</div><div class="value">${r.costCat.toFixed(2)} €</div></div>
+        <div class="item"><div class="label">Lavados</div><div class="value">Cliente ${state.washesUser} / Perruche ${r.washes}</div></div>
+        <div class="item">
+          <div class="label">Beneficios</div>
+          <div class="value">
+            • ${tips[0]}<br/>
+            • ${tips[1]}<br/>
+            • ${tips[2]}<br/>
+            • ${tips[3]}
+          </div>
+        </div>
+      </div>
+    `;
+    cards.appendChild(el);
+  });
+}
+
 function calc(){
+  // Calcular lavados cliente
+  state.washesUser = Math.floor(state.volUser / state.pureUser);
+
   const price = +document.getElementById('price').value;
   const type = document.getElementById('type').value;
   const pack = +document.getElementById('pack').value;
@@ -240,29 +316,24 @@ function calc(){
 
   const cards = document.getElementById('cards');
   const empty = document.getElementById('emptyMsg');
-  cards.innerHTML = '';
-  empty.style.display = rows.length ? 'none' : 'block';
-
-  const L = I18N[state.lang].labels;
-  rows.forEach(r => {
-    const el = document.createElement('div');
-    el.className = 'prod';
-    el.innerHTML = `
-      <h3>${r.nombre}</h3>
-      <div class="meta">
-        <span class="tag">${L.dil}: ${r.dil}</span>
-        <span class="tag">${L.vol}: ${r.vol} ml</span>
-        <span class="tag">${L.price}: ${r.price.toFixed(2)} €</span>
-      </div>
-      <div class="cols">
-        <div class="item"><div class="label">${L.pure}</div><div class="value">${r.pureCat} ml</div></div>
-        <div class="item"><div class="label">${L.cost}</div><div class="value">${r.costCat.toFixed(2)} €</div></div>
-        <div class="item"><div class="label">${L.washes}</div><div class="value">${r.washes}</div></div>
-        <div class="item"><div class="label">${L.saving}</div><div class="value save">+${r.saving.toFixed(2)} €</div></div>
-      </div>
-    `;
-    cards.appendChild(el);
-  });
+  document.getElementById('countPos').textContent = rows.length;
+  if (rows.length){
+    renderCards(rows, state.lang);
+  } else {
+    // No hay ahorro positivo: buscamos candidatos cercanos (menor coste/lavado)
+    const all = CATALOG
+      .filter(r => r.tipo === type && r.volumen_ml && r.precio_prof_iva && r.dilucion)
+      .map(r => {
+        const pureCat = pureNeededForMix(mixUser, r.dilucion);
+        const costCat = +((r.precio_prof_iva / r.volumen_ml) * pureCat).toFixed(2);
+        const washes = +((r.volumen_ml / pureCat).toFixed(0));
+        return { nombre:r.nombre, dil:r.dilucion, vol:r.volumen_ml, price:r.precio_prof_iva, pureCat, costCat, washes };
+      })
+      .sort((a,b)=> a.costCat - b.costCat)
+      .slice(0, Math.min(6,  CATALOG.length));
+    renderBenefits(all, state.lang);
+  }
+});
 }
 
 document.getElementById('calcBtn').addEventListener('click', calc);
